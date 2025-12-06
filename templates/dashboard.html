@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wikipedia Dashboard</title>
+
+    <!-- Fonts -->
+    <link
+        href="https://fonts.googleapis.com/css2?family=Charis+SIL:wght@400;700&family=Inter:wght@400;500;600&family=Meera&display=swap"
+        rel="stylesheet">
+
+    <!-- Bootstrap 5 -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        :root {
+            --wiki-font-serif: 'Charis SIL', 'Linux Libertine', Georgia, serif;
+            --wiki-font-sans: 'Inter', sans-serif;
+            --wiki-bg: #f6f6f6;
+            --wiki-header-border: #c8ccd1;
+            --wiki-link: #0645ad;
+        }
+
+        body {
+            font-family: var(--wiki-font-sans);
+            background-color: var(--wiki-bg);
+            color: #202122;
+            padding-bottom: 40px;
+        }
+
+        h1,
+        h2,
+        h3 {
+            font-family: var(--wiki-font-serif);
+            color: #000;
+        }
+
+        .wiki-header {
+            background: #fff;
+            border-bottom: 1px solid var(--wiki-header-border);
+            padding: 1rem 0;
+            margin-bottom: 2rem;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        }
+
+        .wiki-logo {
+            font-family: var(--wiki-font-serif);
+            font-size: 1.5rem;
+            font-weight: 700;
+            display: flex;
+            /* Ensure these are flex children */
+            align-items: center;
+            /* Vertical center alignment */
+            gap: 15px;
+            color: #000;
+            text-decoration: none;
+        }
+
+        .wiki-logo img {
+            height: 45px;
+        }
+
+        .wiki-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        /* Stats Cards */
+        .wiki-card {
+            background: #fff;
+            border: 1px solid #a2a9b1;
+            border-left: 5px solid #3366cc;
+            /* Default Accent */
+            border-radius: 2px;
+            padding: 20px;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+        }
+
+        .kpi-value {
+            font-family: var(--wiki-font-serif);
+            font-size: 2.2rem;
+            line-height: 1.1;
+            color: #202122;
+        }
+
+        .kpi-label {
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            color: #54595d;
+            letter-spacing: 0.5px;
+            margin-top: 5px;
+        }
+
+        /* Content Boxes */
+        .wiki-box {
+            background: #fff;
+            border: 1px solid #a2a9b1;
+            padding: 20px;
+            margin-bottom: 2rem;
+            border-radius: 2px;
+        }
+
+        .wiki-box-header {
+            border-bottom: 1px solid #a2a9b1;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .wiki-box-title {
+            font-size: 1.4rem;
+            margin: 0;
+        }
+
+        /* Table */
+        .wikitable {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.95rem;
+        }
+
+        .wikitable th {
+            background-color: #eaecf0;
+            padding: 12px;
+            text-align: left;
+            border: 1px solid #a2a9b1;
+            font-weight: 600;
+        }
+
+        .wikitable td {
+            border: 1px solid #a2a9b1;
+            padding: 10px;
+            background: #fff;
+        }
+
+        .wikitable tr:hover td {
+            background: #f8f9fa;
+        }
+
+        .malayalam-text {
+            font-family: 'Meera', sans-serif;
+            font-size: 1.1rem;
+        }
+
+        .btn-wiki {
+            background-color: #3366cc;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            font-weight: 500;
+            border-radius: 2px;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: background 0.2s;
+        }
+
+        .btn-wiki:hover {
+            background-color: #2a4b8d;
+            color: white;
+        }
+
+        .search-input {
+            padding: 6px 12px;
+            border: 1px solid #a2a9b1;
+            border-radius: 2px;
+            min-width: 250px;
+        }
+
+        /* Loader */
+        #loader {
+            position: fixed;
+            inset: 0;
+            background: rgba(255, 255, 255, 0.9);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="loader">
+        <div class="spinner-border text-primary" role="status"></div>
+    </div>
+
+    <!-- Header -->
+    <header class="wiki-header">
+        <div class="wiki-container d-flex justify-content-between align-items-center">
+            <a href="/" class="wiki-logo">
+                <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/8/80/Wikipedia-logo-v2.svg/200px-Wikipedia-logo-v2.svg.png"
+                    alt="Wiki Logo">
+                <div class="d-flex flex-column">
+                    <span>{{ filename }}</span>
+                    <small style="font-size: 0.8rem; font-weight: normal; color: #54595d;">◄ Back to All Events</small>
+                </div>
+            </a>
+
+            <a href="/export/{{ filename }}" class="btn-wiki">
+                <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                    <path
+                        d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z" />
+                    <path
+                        d="M7.646 11.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 10.293V1.5a.5.5 0 0 0-1 0v8.793L5.354 8.146a.5.5 0 1 0-.708.708l3 3z" />
+                </svg>
+                Download Report
+            </a>
+        </div>
+    </header>
+
+    <div class="wiki-container">
+
+        <!-- KPI Row -->
+        <h2 class="mb-4" style="border-bottom: 1px solid #a2a9b1; padding-bottom: 10px;">Event Overview</h2>
+        <div class="row g-4 mb-5" id="kpi-container">
+            <!-- JS will populate -->
+        </div>
+
+        <!-- Main Content Grid -->
+        <div class="row">
+            <!-- Chart Column -->
+            <div class="col-lg-8 mb-4">
+                <div class="wiki-box h-100">
+                    <div class="wiki-box-header">
+                        <h3 class="wiki-box-title">Top Contributors (Bytes)</h3>
+                    </div>
+                    <div style="height: 300px;">
+                        <canvas id="contributorsChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Info Column -->
+            <div class="col-lg-4 mb-4">
+                <div class="wiki-box h-100" style="background:#f8f9fa;">
+                    <div class="wiki-box-header">
+                        <h3 class="wiki-box-title">File Details</h3>
+                    </div>
+                    <ul class="list-unstyled">
+                        <li class="mb-2"><strong>Filename:</strong> <br><code>{{ filename }}</code></li>
+                        <li class="mb-2"><strong>Language:</strong> Malayalam (ml)</li>
+                        <li class="mb-2"><strong>Status:</strong> <span style="color:green">● Processed</span></li>
+                    </ul>
+                    <hr>
+                    <p class="text-muted small">Data verified from MediaWiki API.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Detailed Table -->
+        <div class="wiki-box">
+            <div class="wiki-box-header">
+                <h3 class="wiki-box-title">Article Contributions</h3>
+                <input type="text" id="searchInput" class="search-input" placeholder="Search title...">
+            </div>
+
+            <div class="table-responsive">
+                <table class="wikitable">
+                    <thead>
+                        <tr>
+                            <th>Article</th>
+                            <th>User</th>
+                            <th class="text-end">Bytes</th>
+                            <th class="text-end">Edits</th>
+                            <th class="text-end">Refs</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody"> <!-- JS will populate --> </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        const CURRENT_FILENAME = "{{ filename }}";
+        let allArticles = [];
+
+        document.addEventListener('DOMContentLoaded', fetchStats);
+
+        async function fetchStats() {
+            try {
+                const res = await fetch(`/api/stats/${CURRENT_FILENAME}`);
+                const data = await res.json();
+
+                renderKPIs(data.summary);
+                renderChart(data.chart_data);
+                allArticles = data.articles;
+                renderTable(allArticles);
+
+                document.getElementById('loader').style.display = 'none';
+            } catch (err) {
+                console.error(err);
+                alert("Failed to load data.");
+            }
+        }
+
+        function renderKPIs(s) {
+            const kpis = [
+                { label: 'Articles', val: s.total_articles, color: '#3366cc' },
+                { label: 'Total Bytes', val: s.total_bytes.toLocaleString(), color: '#00af89' },
+                { label: 'Edits', val: s.total_edits.toLocaleString(), color: '#e67e22' },
+                { label: 'Editors', val: s.active_editors, color: '#720fcd' }
+            ];
+
+            document.getElementById('kpi-container').innerHTML = kpis.map(k => `
+                <div class="col-md-3">
+                    <div class="wiki-card" style="border-left-color: ${k.color}">
+                        <div class="kpi-value">${k.val}</div>
+                        <div class="kpi-label">${k.label}</div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function renderChart(data) {
+            const ctx = document.getElementById('contributorsChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: data.map(d => d.Creator),
+                    datasets: [{
+                        label: 'Bytes',
+                        data: data.map(d => d.LastSize),
+                        backgroundColor: '#a7d7f9',
+                        borderColor: '#3366cc',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { grid: { display: false } },
+                        y: { beginAtZero: true }
+                    }
+                }
+            });
+        }
+
+        function renderTable(data) {
+            const tbody = document.getElementById('tableBody');
+            if (data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" class="text-center p-4">No data</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = data.map(row => `
+                <tr>
+                    <td><a href="https://ml.wikipedia.org/wiki/${row.Title}" target="_blank" class="malayalam-text" style="text-decoration:none; font-weight:bold; color:#0645ad;">${row.Title}</a></td>
+                    <td><a href="https://ml.wikipedia.org/wiki/User:${row.Creator}" target="_blank" style="text-decoration:none; color:#0645ad;">${row.Creator}</a></td>
+                    <td class="text-end">${row.LastSize.toLocaleString()}</td>
+                    <td class="text-end">${row.Edits.toLocaleString()}</td>
+                    <td class="text-end fw-bold">${row.References}</td>
+                </tr>
+            `).join('');
+        }
+
+        document.getElementById('searchInput').addEventListener('input', (e) => {
+            const term = e.target.value.toLowerCase();
+            const filtered = allArticles.filter(a => a.Title.toLowerCase().includes(term));
+            renderTable(filtered);
+        });
+    </script>
+</body>
+
+</html>
